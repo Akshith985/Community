@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SKYNET Club - Project Portal</title>
+  
+  <!-- NES.css Framework -->
+  <link href="https://unpkg.com/nes.css@2.3.0/css/nes.min.css" rel="stylesheet" />
+  
+  <!-- Pixel Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+
+  <style>
+    body {
+      font-family: 'Press Start 2P', cursive;
+      background-color: #212529;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 980px;
+      margin: 0 auto;
+    }
+
+    header {
+      position: relative;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 4px solid #fff;
+      background-color: #212529;
+    }
+
+    .nav-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: #fff;
+    }
+
+    .menu-toggle {
+      display: none;
+      cursor: pointer;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .user-box {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.6rem;
+    }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid #fff;
+    }
+
+    .badge-admin {
+      background-color: #e76e55;
+      color: #fff;
+      padding: 2px 6px;
+      font-size: 0.55rem;
+      border-radius: 2px;
+    }
+
+    .badge-member {
+      background-color: #209cee;
+      color: #fff;
+      padding: 2px 6px;
+      font-size: 0.55rem;
+      border-radius: 2px;
+    }
+
+    .user-stats-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .points-box {
+      background-color: #f7d51d;
+      color: #000;
+      padding: 10px 15px;
+      font-size: 0.75rem;
+    }
+
+    .admin-panel {
+      border-color: #e76e55 !important;
+      margin-bottom: 2rem;
+    }
+
+    .projects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .project-card {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    .tech-tag {
+      display: inline-block;
+      background-color: #92cc41;
+      color: #000;
+      font-size: 0.55rem;
+      padding: 3px 6px;
+      margin-right: 4px;
+      margin-bottom: 4px;
+    }
+
+    .dialog-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+
+    .dialog-backdrop.active {
+      display: flex;
+    }
+
+    .nes-dialog.is-dark {
+      max-width: 460px;
+      width: 90%;
+      background-color: #212529;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.65rem;
+      padding-top: 1.5rem;
+      border-top: 4px solid #fff;
+      line-height: 1.6rem;
+    }
+
+    footer a {
+      color: #209cee;
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    .social-links {
+      display: flex;
+      justify-content: center;
+      gap: 1.2rem;
+      margin-bottom: 1rem;
+    }
+
+    @media (max-width: 768px) {
+      .menu-toggle {
+        display: block;
+      }
+
+      .nav-controls {
+        display: none;
+        flex-direction: column;
+        width: 100%;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 2px dashed #fff;
+        gap: 12px;
+      }
+
+      .nav-controls.active {
+        display: flex;
+      }
+
+      .user-box {
+        flex-direction: column;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- Navbar -->
+    <header>
+      <div class="nav-bar">
+        <a href="index.html" class="logo">
+          <i class="nes-icon trophy is-medium"></i>
+          <span>SKYNET Portal</span>
+        </a>
+
+        <button type="button" class="nes-btn menu-toggle" id="menu-btn" aria-label="Toggle Navigation">
+          ☰
+        </button>
+      </div>
+
+      <div id="nav-menu" class="nav-controls">
+        <div id="auth-buttons" style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+          <button type="button" class="nes-btn is-primary" style="font-size: 0.6rem;" onclick="openAuthModal('login')">
+            Login
+          </button>
+          <button type="button" class="nes-btn is-success" style="font-size: 0.6rem;" onclick="openAuthModal('signup')">
+            Sign Up
+          </button>
+        </div>
+
+        <div id="user-profile" class="user-box" style="display: none;">
+          <img id="user-avatar" class="user-avatar" src="" alt="Avatar" />
+          <span id="user-name"></span>
+          <button type="button" class="nes-btn is-error" style="font-size: 0.55rem;" onclick="logoutUser()">Logout</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Guest View -->
+    <div id="guest-view">
+      <section class="nes-container is-dark with-title is-centered hero" style="margin-bottom: 2rem;">
+        <p class="title">Welcome to SKYNET</p>
+        <h1 style="font-size: 1.2rem; line-height: 1.8rem;">SKYNET Community Project Hub</h1>
+        <p style="font-size: 0.7rem; line-height: 1.3rem; color: #ccc; margin-bottom: 1.5rem;">
+          Join our developer guild, complete open-source projects, build your portfolio, and earn 5 points per completed mission!
+        </p>
+        <button class="nes-btn is-success" onclick="openAuthModal('signup')">Join the Guild</button>
+      </section>
+    </div>
+
+    <!-- Dashboard View -->
+    <div id="dashboard-view" style="display: none;">
+      
+      <!-- User Status & Points Panel -->
+      <section class="nes-container is-dark user-stats-bar">
+        <div>
+          <span id="dash-user-email" style="font-size: 0.8rem; font-weight: bold;"></span>
+          <span id="dash-user-role" style="margin-left: 8px;"></span>
+          <p style="font-size: 0.6rem; color: #aaa; margin-top: 6px; margin-bottom: 0;">
+            Completed Missions: <span id="dash-completed-count" style="color: #92cc41;">0</span>
+          </p>
+        </div>
+        <div class="points-box">
+          TOTAL POINTS: <span id="dash-total-points">0</span> PTS
+        </div>
+      </section>
+
+      <!-- Admin Panel (akshithclg@gmail.com Only) -->
+      <section id="admin-panel" class="nes-container is-dark with-title admin-panel" style="display: none;">
+        <p class="title" style="color: #e76e55;">Admin Panel: Create Project</p>
+        <form onsubmit="handleCreateProject(event)" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="nes-field">
+            <label for="proj-title" style="font-size: 0.65rem;">Project Title</label>
+            <input type="text" id="proj-title" class="nes-input is-dark" placeholder="e.g. Distributed KV Store" required />
+          </div>
+
+          <div class="nes-field">
+            <label for="proj-tech" style="font-size: 0.65rem;">Tech Stack (comma-separated)</label>
+            <input type="text" id="proj-tech" class="nes-input is-dark" placeholder="Java, Docker, REST" required />
+          </div>
+
+          <div class="nes-field">
+            <label for="proj-desc" style="font-size: 0.65rem;">Description</label>
+            <textarea id="proj-desc" class="nes-textarea is-dark" placeholder="Describe project goals..." required></textarea>
+          </div>
+
+          <button type="submit" class="nes-btn is-error" style="font-size: 0.65rem;">Publish Mission (+5 Pts)</button>
+        </form>
+      </section>
+
+      <!-- Projects Listing -->
+      <h2 style="font-size: 1rem; margin-bottom: 1.2rem; color: #f7d51d;">> Available Missions</h2>
+      <div id="projects-container" class="projects-grid"></div>
+
+      <!-- Formspree Collaboration Form -->
+      <section id="collab-form" class="nes-container is-dark with-title" style="margin-top: 2rem; margin-bottom: 2rem;">
+        <p class="title">Guild Collaboration Form</p>
+        <p style="font-size: 0.65rem; margin-bottom: 1.2rem; color: #ccc;">Have a project proposal or inquiry for SKYNET? Send us a dispatch.</p>
+
+        <form action="https://formspree.io/f/xkjnqrgr" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
+          <div class="nes-field">
+            <label for="name_field" style="font-size: 0.65rem;">Your Name / Handle</label>
+            <input type="text" id="name_field" name="name" class="nes-input is-dark" placeholder="e.g. Alex" required />
+          </div>
+
+          <div class="nes-field">
+            <label for="email_field" style="font-size: 0.65rem;">Email Address</label>
+            <input type="email" id="email_field" name="email" class="nes-input is-dark" placeholder="leader@guild.com" required />
+          </div>
+
+          <div class="nes-field">
+            <label for="select_type" style="font-size: 0.65rem;">Dispatch Type</label>
+            <div class="nes-select is-dark">
+              <select required id="select_type" name="collaboration_type">
+                <option value="" disabled selected hidden>Select category...</option>
+                <option value="community_member">Join SKYNET</option>
+                <option value="partner">Event Partnership</option>
+                <option value="sponsor">Sponsorship Inquiry</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="nes-field">
+            <label for="message_field" style="font-size: 0.65rem;">Message</label>
+            <textarea id="message_field" name="message" class="nes-textarea is-dark" placeholder="Your dispatch message..."></textarea>
+          </div>
+
+          <button type="submit" class="nes-btn is-warning" style="margin-top: 0.5rem; font-size: 0.65rem;">Send Dispatch</button>
+        </form>
+      </section>
+
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <div class="social-links">
+        <a href="https://github.com/skynet-rmp" target="_blank" rel="noopener noreferrer"><i class="nes-icon github is-medium"></i></a>
+        <a href="https://x.com/SkynetRmp" target="_blank" rel="noopener noreferrer"><i class="nes-icon twitter is-medium"></i></a>
+        <a href="https://www.linkedin.com/company/skynetclub" target="_blank" rel="noopener noreferrer"><i class="nes-icon linkedin is-medium"></i></a>
+      </div>
+      <p>&copy; 2026 SKYNET Club. All rights reserved.</p>
+    </footer>
+
+  </div>
+
+  <!-- Unified Auth Modal -->
+  <div id="auth-modal" class="dialog-backdrop">
+    <div class="nes-dialog is-dark is-rounded">
+      <form id="auth-form" method="dialog" onsubmit="handleEmailAuth(event)">
+        <p class="title" id="modal-title" style="font-size: 0.85rem; margin-bottom: 1rem; color: #f7d51d;">Login to SKYNET</p>
+        
+        <div class="nes-field" style="margin-bottom: 0.8rem;">
+          <label for="modal-email" style="font-size: 0.6rem;">Email</label>
+          <input type="email" id="modal-email" class="nes-input is-dark" placeholder="player@skynet.com" required />
+        </div>
+
+        <div class="nes-field" style="margin-bottom: 1rem;">
+          <label for="modal-password" style="font-size: 0.6rem;">Password</label>
+          <input type="password" id="modal-password" class="nes-input is-dark" placeholder="••••••••" required />
+        </div>
+
+        <button type="submit" class="nes-btn is-primary" id="modal-submit-btn" style="width: 100%; margin-bottom: 0.8rem; font-size: 0.65rem;">
+          Submit
+        </button>
+
+        <p style="font-size: 0.55rem; text-align: center; margin: 0.5rem 0; color: #aaa;">— OR OAuth SIGN-IN —</p>
+
+        <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
+          <button type="button" class="nes-btn is-normal" style="flex: 1; font-size: 0.55rem;" onclick="loginWithGoogle()">Google</button>
+          <button type="button" class="nes-btn is-dark" style="flex: 1; font-size: 0.55rem;" onclick="loginWithGithub()">GitHub</button>
+        </div>
+
+        <menu class="dialog-menu" style="padding: 0; margin: 0; text-align: right;">
+          <button type="button" class="nes-btn is-error" style="font-size: 0.55rem;" onclick="closeAuthModal()">Close</button>
+        </menu>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const menuBtn = document.getElementById('menu-btn');
+    const navMenu = document.getElementById('nav-menu');
+
+    menuBtn.addEventListener('click', () => {
+      navMenu.classList.toggle('active');
+    });
+  </script>
+
+  <script type="module" src="./firebase-config.js"></script>
+</body>
+</html>
