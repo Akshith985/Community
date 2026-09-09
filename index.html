@@ -225,7 +225,7 @@
       </div>
     </header>
 
-    <!-- Guest View -->
+    <!-- Guest Hero View -->
     <div id="guest-view">
       <section class="nes-container is-dark with-title is-centered hero" style="margin-bottom: 2rem;">
         <p class="title">Welcome to SKYNET</p>
@@ -237,7 +237,7 @@
       </section>
     </div>
 
-    <!-- Dashboard View -->
+    <!-- Dashboard View for Logged-In Users -->
     <div id="dashboard-view" style="display: none;">
       
       <!-- User Status & Points Panel -->
@@ -277,48 +277,56 @@
         </form>
       </section>
 
-      <!-- Projects Listing -->
-      <h2 style="font-size: 1rem; margin-bottom: 1.2rem; color: #f7d51d;">> Available Missions</h2>
-      <div id="projects-container" class="projects-grid"></div>
-
-      <!-- Formspree Collaboration Form -->
-      <section id="collab-form" class="nes-container is-dark with-title" style="margin-top: 2rem; margin-bottom: 2rem;">
-        <p class="title">Guild Collaboration Form</p>
-        <p style="font-size: 0.65rem; margin-bottom: 1.2rem; color: #ccc;">Have a project proposal or inquiry for SKYNET? Send us a dispatch.</p>
-
-        <form action="https://formspree.io/f/xkjnqrgr" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
-          <div class="nes-field">
-            <label for="name_field" style="font-size: 0.65rem;">Your Name / Handle</label>
-            <input type="text" id="name_field" name="name" class="nes-input is-dark" placeholder="e.g. Alex" required />
-          </div>
-
-          <div class="nes-field">
-            <label for="email_field" style="font-size: 0.65rem;">Email Address</label>
-            <input type="email" id="email_field" name="email" class="nes-input is-dark" placeholder="leader@guild.com" required />
-          </div>
-
-          <div class="nes-field">
-            <label for="select_type" style="font-size: 0.65rem;">Dispatch Type</label>
-            <div class="nes-select is-dark">
-              <select required id="select_type" name="collaboration_type">
-                <option value="" disabled selected hidden>Select category...</option>
-                <option value="community_member">Join SKYNET</option>
-                <option value="partner">Event Partnership</option>
-                <option value="sponsor">Sponsorship Inquiry</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="nes-field">
-            <label for="message_field" style="font-size: 0.65rem;">Message</label>
-            <textarea id="message_field" name="message" class="nes-textarea is-dark" placeholder="Your dispatch message..."></textarea>
-          </div>
-
-          <button type="submit" class="nes-btn is-warning" style="margin-top: 0.5rem; font-size: 0.65rem;">Send Dispatch</button>
-        </form>
-      </section>
-
     </div>
+
+    <!-- PUBLIC LEADERBOARD SECTION -->
+    <section class="nes-container is-dark with-title" style="margin-bottom: 2rem;">
+      <p class="title" style="color: #f7d51d;">Guild Leaderboard</p>
+      <div id="leaderboard-list">
+        <p style="font-size: 0.65rem; color: #aaa; text-align: center;">Loading rankings...</p>
+      </div>
+    </section>
+
+    <!-- Missions Section -->
+    <h2 style="font-size: 1rem; margin-bottom: 1.2rem; color: #f7d51d;">> Available Missions</h2>
+    <div id="projects-container" class="projects-grid"></div>
+
+    <!-- Formspree Collaboration Form -->
+    <section id="collab-form" class="nes-container is-dark with-title" style="margin-top: 2rem; margin-bottom: 2rem;">
+      <p class="title">Guild Collaboration Form</p>
+      <p style="font-size: 0.65rem; margin-bottom: 1.2rem; color: #ccc;">Have a project proposal or inquiry for SKYNET? Send us a dispatch.</p>
+
+      <form action="https://formspree.io/f/xkjnqrgr" method="POST" style="display: flex; flex-direction: column; gap: 1rem;">
+        <div class="nes-field">
+          <label for="name_field" style="font-size: 0.65rem;">Your Name / Handle</label>
+          <input type="text" id="name_field" name="name" class="nes-input is-dark" placeholder="e.g. Alex" required />
+        </div>
+
+        <div class="nes-field">
+          <label for="email_field" style="font-size: 0.65rem;">Email Address</label>
+          <input type="email" id="email_field" name="email" class="nes-input is-dark" placeholder="leader@guild.com" required />
+        </div>
+
+        <div class="nes-field">
+          <label for="select_type" style="font-size: 0.65rem;">Dispatch Type</label>
+          <div class="nes-select is-dark">
+            <select required id="select_type" name="collaboration_type">
+              <option value="" disabled selected hidden>Select category...</option>
+              <option value="community_member">Join SKYNET</option>
+              <option value="partner">Event Partnership</option>
+              <option value="sponsor">Sponsorship Inquiry</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="nes-field">
+          <label for="message_field" style="font-size: 0.65rem;">Message</label>
+          <textarea id="message_field" name="message" class="nes-textarea is-dark" placeholder="Your dispatch message..."></textarea>
+        </div>
+
+        <button type="submit" class="nes-btn is-warning" style="margin-top: 0.5rem; font-size: 0.65rem;">Send Dispatch</button>
+      </form>
+    </section>
 
     <!-- Footer -->
     <footer>

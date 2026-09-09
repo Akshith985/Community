@@ -1,3 +1,39 @@
+// Fetch and render Public Leaderboard
+async function fetchLeaderboard() {
+  const container = document.getElementById('leaderboard-list');
+  if (!container) return;
+
+  const { data, error } = await supabaseClient
+    .from('leaderboard')
+    .select('*')
+    .order('total_points', { ascending: false });
+
+  if (error) {
+    console.error('Error fetching leaderboard:', error.message);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    container.innerHTML = `<p style="font-size: 0.6rem; color: #aaa; text-align: center;">No rankings recorded yet.</p>`;
+    return;
+  }
+
+  container.innerHTML = data.map((entry, index) => {
+    const handle = entry.email ? entry.email.split('@')[0] : 'Member';
+    return `
+      <div class="nes-container is-dark is-rounded" style="margin-bottom: 0.8rem; padding: 0.8rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem;">
+        <div>
+          <span style="color: #f7d51d;">#${index + 1}</span>
+          <span style="margin-left: 8px;">${handle}</span>
+        </div>
+        <div>
+          <span style="color: #92cc41;">${entry.total_points} PTS</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
 // Fetch and render Available Missions (Projects)
 async function fetchMissions() {
   const container = document.getElementById('projects-container');
@@ -93,8 +129,11 @@ async function syncUserLeaderboard(userId, email, pointsToAdd = 0, missionsToAdd
     }, { onConflict: 'user_id' });
 
   if (!error) {
-    document.getElementById('dash-total-points').innerText = newPoints;
-    document.getElementById('dash-completed-count').innerText = newMissions;
+    const totalPtsEl = document.getElementById('dash-total-points');
+    const compCountEl = document.getElementById('dash-completed-count');
+    if (totalPtsEl) totalPtsEl.innerText = newPoints;
+    if (compCountEl) compCountEl.innerText = newMissions;
+    fetchLeaderboard();
   }
 }
 
@@ -109,4 +148,9 @@ async function completeMission(projectId) {
   alert("Mission completed! +5 Points added.");
 }
 
-window.addEventListener('DOMContentLoaded', fetchMissions);
+window.addEventListener('DOMContentLoaded', () => {
+  fetchLeaderboard();
+  fetchMissions();
+});
+
+
