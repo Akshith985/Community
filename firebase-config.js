@@ -30,39 +30,7 @@ const ADMIN_EMAIL = "akshithclg@gmail.com";
 let currentAuthMode = 'login';
 let currentUser = null;
 
-let defaultProjects = [
-  {
-    id: "p1",
-    title: "Distributed Key-Value Store",
-    tech: ["Java", "Docker", "WAL"],
-    desc: "Build a light distributed key-value store with replication and write-ahead logging."
-  },
-  {
-    id: "p2",
-    title: "Aptos Escrow Smart Contract",
-    tech: ["Move", "Next.js", "TypeScript"],
-    desc: "Develop and deploy an automated token escrow module on Aptos testnet."
-  }
-];
-
-function getStoredProjects() {
-  const data = localStorage.getItem("skynet_projects");
-  return data ? JSON.parse(data) : defaultProjects;
-}
-
-function saveProjects(projects) {
-  localStorage.setItem("skynet_projects", JSON.stringify(projects));
-}
-
-function getUserProgress(email) {
-  const data = localStorage.getItem("skynet_user_" + email);
-  return data ? JSON.parse(data) : { completedIds: [], points: 0 };
-}
-
-function saveUserProgress(email, progress) {
-  localStorage.setItem("skynet_user_" + email, JSON.stringify(progress));
-}
-
+// Modal Controls
 window.openAuthModal = (mode) => {
   currentAuthMode = mode;
   const modal = document.getElementById('auth-modal');
@@ -87,6 +55,7 @@ window.closeAuthModal = () => {
   modal.classList.remove('active');
 };
 
+// Auth Handlers
 window.handleEmailAuth = async (event) => {
   event.preventDefault();
   const email = document.getElementById('modal-email').value;
@@ -131,7 +100,8 @@ window.logoutUser = async () => {
   }
 };
 
-window.handleCreateProject = (event) => {
+// Create Mission (Admin Restricted via Supabase)
+window.handleCreateProject = async (event) => {
   event.preventDefault();
   if (!currentUser || currentUser.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
     alert("Unauthorized action!");
@@ -139,44 +109,83 @@ window.handleCreateProject = (event) => {
   }
 
   const title = document.getElementById('proj-title').value;
-  const techRaw = document.getElementById('proj-tech').value;
-  const desc = document.getElementById('proj-desc').value;
+  const tech_stack = document.getElementById('proj-tech').value;
+  const description = document.getElementById('proj-desc').value;
 
-  const tech = techRaw.split(',').map(t => t.trim()).filter(Boolean);
-  const projects = getStoredProjects();
+  const { error } = await supabaseClient
+    .from('projects')
+    .insert([{ title, tech_stack, description }]);
 
-  const newProj = {
-    id: "p_" + Date.now(),
-    title,
-    tech,
-    desc
-  };
-
-  projects.push(newProj);
-  saveProjects(projects);
-
-  document.getElementById('proj-title').value = '';
-  document.getElementById('proj-tech').value = '';
-  document.getElementById('proj-desc').value = '';
-
-  renderDashboard();
-};
-
-window.completeProject = (projId) => {
-  if (!currentUser) return;
-
-  const email = currentUser.email.toLowerCase();
-  const progress = getUserProgress(email);
-
-  if (!progress.completedIds.includes(projId)) {
-    progress.completedIds.push(projId);
-    progress.points += 5;
-    saveUserProgress(email, progress);
+  if (error) {
+    alert('Error publishing mission: ' + error.message);
+  } else {
+    document.getElementById('proj-title').value = '';
+    document.getElementById('proj-tech').value = '';
+    document.getElementById('proj-desc').value = '';
     renderDashboard();
   }
 };
 
-function renderDashboard() {
+// Complete Mission & Auto-Update Points across Tables
+window.completeProject = async (projId, encTitle, encTech, encDesc) => {
+  if (!currentUser) return;
+
+  const email = currentUser.email.toLowerCase();
+  const title = decodeURIComponent(encTitle);
+  const tech_stack = decodeURIComponent(encTech);
+  const description = decodeURIComponent(encDesc);
+
+  // 1. Record user mission completion
+  const { error: insertError } = await supabaseClient
+    .from('completed_missions')
+    .insert([{ user_email: email, project_id: projId }]);
+
+  if (insertError) {
+    if (insertError.code === '23505') {
+      alert("You have already completed this mission!");
+    } else {
+      alert("Error completing mission: " + insertError.message);
+    }
+    return;
+  }
+
+  // 2. Add entry to done_projects archive table
+  await supabaseClient
+    .from('done_projects')
+    .insert([{
+      project_id: projId,
+      title: title,
+      tech_stack: tech_stack,
+      description: description,
+      completed_by: email
+    }]);
+
+  // 3. Recalculate total completed missions and points
+  const { count, error: countError } = await supabaseClient
+    .from('completed_missions')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_email', email);
+
+  if (!countError) {
+    const totalPoints = count * 5;
+
+    // 4. Automatically sync points to leaderboard table
+    await supabaseClient
+      .from('leaderboard')
+      .upsert({
+        email: email,
+        completed_missions: count,
+        total_points: totalPoints,
+        updated_at: new Date()
+      }, { onConflict: 'email' });
+
+    alert(`Mission Completed! +5 Points awarded (${totalPoints} Total PTS).`);
+    renderDashboard();
+  }
+};
+
+// Render Leaderboard, Available Missions, Done Projects & User Stats
+async function renderDashboard() {
   if (!currentUser) return;
 
   const email = currentUser.email.toLowerCase();
@@ -184,51 +193,131 @@ function renderDashboard() {
 
   document.getElementById('dash-user-email').textContent = currentUser.email;
   const roleEl = document.getElementById('dash-user-role');
-  if (isAdmin) {
-    roleEl.textContent = 'ADMIN';
-    roleEl.className = 'badge-admin';
-    document.getElementById('admin-panel').style.display = 'block';
-  } else {
-    roleEl.textContent = 'MEMBER';
-    roleEl.className = 'badge-member';
-    document.getElementById('admin-panel').style.display = 'none';
+  if (roleEl) {
+    if (isAdmin) {
+      roleEl.textContent = 'ADMIN';
+      roleEl.className = 'badge-admin';
+      document.getElementById('admin-panel').style.display = 'block';
+    } else {
+      roleEl.textContent = 'MEMBER';
+      roleEl.className = 'badge-member';
+      document.getElementById('admin-panel').style.display = 'none';
+    }
   }
 
-  const progress = getUserProgress(email);
-  document.getElementById('dash-completed-count').textContent = progress.completedIds.length;
-  document.getElementById('dash-total-points').textContent = progress.points;
+  // Fetch Completed Mission IDs for Current User
+  let userCompletions = [];
+  const { data: completions } = await supabaseClient
+    .from('completed_missions')
+    .select('project_id')
+    .eq('user_email', email);
 
-  const projects = getStoredProjects();
-  const container = document.getElementById('projects-container');
-  container.innerHTML = '';
+  if (completions) {
+    userCompletions = completions.map(c => c.project_id);
+  }
 
-  projects.forEach((proj) => {
-    const isCompleted = progress.completedIds.includes(proj.id);
-    const card = document.createElement('div');
-    card.className = `nes-container is-dark with-title project-card ${isCompleted ? 'is-rounded' : ''}`;
-    
-    let techTags = proj.tech.map(t => `<span class="tech-tag">${t}</span>`).join('');
-    
-    card.innerHTML = `
-      <p class="title" style="font-size: 0.75rem; color: ${isCompleted ? '#92cc41' : '#209cee'};">${proj.title}</p>
-      <div>
-        <p style="font-size: 0.65rem; color: #ccc; line-height: 1.2rem; margin-bottom: 1rem;">${proj.desc}</p>
-        <div style="margin-bottom: 1rem;">${techTags}</div>
-      </div>
-      <div style="border-top: 2px dashed #444; padding-top: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
-        <span style="font-size: 0.6rem; color: #f7d51d;">+5 PTS</span>
-        ${
-          isCompleted 
-            ? `<button class="nes-btn is-disabled" disabled style="font-size: 0.55rem;">Completed ✔</button>`
-            : `<button class="nes-btn is-success" style="font-size: 0.55rem;" onclick="completeProject('${proj.id}')">Mark Complete</button>`
-        }
-      </div>
-    `;
+  // Update Stats Counters
+  const countEl = document.getElementById('dash-completed-count');
+  const pointsEl = document.getElementById('dash-total-points');
+  if (countEl) countEl.textContent = userCompletions.length;
+  if (pointsEl) pointsEl.textContent = userCompletions.length * 5;
 
-    container.appendChild(card);
-  });
+  // Render Leaderboard Table
+  const lbContainer = document.getElementById('leaderboard-list');
+  if (lbContainer) {
+    const { data: lbData } = await supabaseClient
+      .from('leaderboard')
+      .select('*')
+      .order('total_points', { ascending: false });
+
+    if (lbData && lbData.length > 0) {
+      lbContainer.innerHTML = lbData.map((entry, index) => {
+        const handle = entry.email ? entry.email.split('@')[0] : 'Member';
+        const isCurrent = entry.email === email;
+        return `
+          <div class="nes-container is-dark is-rounded" style="margin-bottom: 0.8rem; padding: 0.8rem; display: flex; justify-content: space-between; align-items: center; font-size: 0.65rem; ${isCurrent ? 'border-color: #f7d51d;' : ''}">
+            <div>
+              <span style="color: #f7d51d;">#${index + 1}</span>
+              <span style="margin-left: 8px;">${handle} ${isCurrent ? '(You)' : ''}</span>
+            </div>
+            <div>
+              <span style="color: #92cc41;">${entry.total_points} PTS</span>
+              <span style="color: #aaa; font-size: 0.55rem; margin-left: 6px;">(${entry.completed_missions} missions)</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      lbContainer.innerHTML = `<p style="font-size: 0.6rem; color: #aaa; text-align: center;">No rankings recorded yet.</p>`;
+    }
+  }
+
+  // Render Done Projects Table
+  const doneContainer = document.getElementById('done-projects-container');
+  if (doneContainer) {
+    const { data: doneData } = await supabaseClient
+      .from('done_projects')
+      .select('*')
+      .order('completed_at', { ascending: false });
+
+    if (doneData && doneData.length > 0) {
+      doneContainer.innerHTML = doneData.map(item => {
+        const userHandle = item.completed_by ? item.completed_by.split('@')[0] : 'Member';
+        const tags = item.tech_stack.split(',').map(t => `<span class="tech-tag" style="background-color: #209cee; color: #fff;">${t.trim()}</span>`).join('');
+        return `
+          <div class="nes-container is-dark is-rounded" style="margin-bottom: 0.8rem; padding: 0.8rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+              <h4 style="font-size: 0.75rem; color: #92cc41; margin: 0;">${item.title}</h4>
+              <span style="font-size: 0.55rem; color: #f7d51d;">Completed by ${userHandle}</span>
+            </div>
+            <div style="margin-bottom: 0.5rem;">${tags}</div>
+            <p style="font-size: 0.58rem; color: #aaa; margin: 0;">${item.description}</p>
+          </div>
+        `;
+      }).join('');
+    } else {
+      doneContainer.innerHTML = `<p style="font-size: 0.6rem; color: #aaa; text-align: center;">No archived project completions.</p>`;
+    }
+  }
+
+  // Render Active Missions
+  const projContainer = document.getElementById('projects-container');
+  if (projContainer) {
+    const { data: projects } = await supabaseClient
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (projects && projects.length > 0) {
+      projContainer.innerHTML = projects.map(proj => {
+        const isCompleted = userCompletions.includes(proj.id);
+        const techTags = proj.tech_stack.split(',').map(t => `<span class="tech-tag">${t.trim()}</span>`).join('');
+
+        return `
+          <div class="nes-container is-dark with-title project-card ${isCompleted ? 'is-rounded' : ''}">
+            <p class="title" style="font-size: 0.75rem; color: ${isCompleted ? '#92cc41' : '#209cee'};">${proj.title}</p>
+            <div>
+              <p style="font-size: 0.65rem; color: #ccc; line-height: 1.2rem; margin-bottom: 1rem;">${proj.description}</p>
+              <div style="margin-bottom: 1rem;">${techTags}</div>
+            </div>
+            <div style="border-top: 2px dashed #444; padding-top: 0.8rem; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 0.6rem; color: #f7d51d;">+5 PTS</span>
+              ${
+                isCompleted 
+                  ? `<button class="nes-btn is-disabled" disabled style="font-size: 0.55rem;">Completed ✔</button>`
+                  : `<button class="nes-btn is-success" style="font-size: 0.55rem;" onclick="completeProject('${proj.id}', '${encodeURIComponent(proj.title)}', '${encodeURIComponent(proj.tech_stack)}', '${encodeURIComponent(proj.description)}')">Mark Complete</button>`
+              }
+            </div>
+          </div>
+        `;
+      }).join('');
+    } else {
+      projContainer.innerHTML = `<p style="font-size: 0.65rem; color: #aaa;">No active missions posted.</p>`;
+    }
+  }
 }
 
+// Auth State Observer
 onAuthStateChanged(auth, (user) => {
   currentUser = user;
   const userSection = document.getElementById("user-profile");
@@ -240,21 +329,21 @@ onAuthStateChanged(auth, (user) => {
   const dashboardView = document.getElementById("dashboard-view");
 
   if (user) {
-    userNameEl.textContent = user.displayName || user.email.split('@')[0];
-    userAvatarEl.src = user.photoURL || "https://nescss.github.io/nes.css/favicon.png";
+    if (userNameEl) userNameEl.textContent = user.displayName || user.email.split('@')[0];
+    if (userAvatarEl) userAvatarEl.src = user.photoURL || "https://nescss.github.io/nes.css/favicon.png";
     
     if (authBtns) authBtns.style.display = "none";
     if (userSection) userSection.style.display = "flex";
 
-    guestView.style.display = "none";
-    dashboardView.style.display = "block";
+    if (guestView) guestView.style.display = "none";
+    if (dashboardView) dashboardView.style.display = "block";
 
     renderDashboard();
   } else {
     if (authBtns) authBtns.style.display = "flex";
     if (userSection) userSection.style.display = "none";
 
-    guestView.style.display = "block";
-    dashboardView.style.display = "none";
+    if (guestView) guestView.style.display = "block";
+    if (dashboardView) dashboardView.style.display = "none";
   }
 });
