@@ -12,12 +12,11 @@
     .tech-tag { display: inline-block; background-color: #e76e55; color: #fff; font-size: 0.5rem; padding: 2px 6px; border-radius: 3px; margin-right: 4px; }
     .project-card { margin-bottom: 1rem; display: flex; flex-direction: column; justify-content: space-between; }
     
-    /* Navigation Bar Layout */
     .top-nav { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 0.8rem; }
     .badge-admin { background-color: #e76e55; color: #fff; font-size: 0.5rem; padding: 2px 6px; border-radius: 3px; }
     .badge-member { background-color: #209cee; color: #fff; font-size: 0.5rem; padding: 2px 6px; border-radius: 3px; }
 
-    /* Auth Dialog Backdrop Overlay */
+    /* Modal Backdrop Layer */
     .dialog-backdrop {
       position: fixed;
       top: 0;
@@ -36,33 +35,33 @@
 </head>
 <body>
 
-  <!-- Top Navigation Bar & Auth Actions -->
+  <!-- Top Navigation Bar -->
   <header class="nes-container is-dark is-rounded top-nav">
     <div style="display: flex; align-items: center; gap: 8px;">
       <i class="nes-icon trophy is-small"></i>
       <span style="font-size: 0.8rem; color: #f7d51d;">SKYNET GUILD</span>
     </div>
 
-    <!-- Unauthenticated View: Auth Buttons -->
+    <!-- Unauthenticated View: Auth Trigger Buttons -->
     <div id="auth-buttons" style="display: flex; gap: 8px;">
-      <button type="button" class="nes-btn is-primary" style="font-size: 0.55rem;" onclick="openAuthModal('login')">Login</button>
-      <button type="button" class="nes-btn is-success" style="font-size: 0.55rem;" onclick="openAuthModal('signup')">Sign Up</button>
+      <button type="button" id="btn-login-trigger" class="nes-btn is-primary" style="font-size: 0.55rem;">Login</button>
+      <button type="button" id="btn-signup-trigger" class="nes-btn is-success" style="font-size: 0.55rem;">Sign Up</button>
     </div>
 
     <!-- Authenticated View: Profile Bar -->
     <div id="user-profile" style="display: none; align-items: center; gap: 10px;">
       <img id="user-avatar" src="https://nescss.github.io/nes.css/favicon.png" alt="Avatar" style="width: 28px; height: 28px; border-radius: 50%;" />
       <span id="user-name" style="font-size: 0.6rem;"></span>
-      <button type="button" class="nes-btn is-error" style="font-size: 0.55rem;" onclick="logoutUser()">Logout</button>
+      <button type="button" id="btn-logout" class="nes-btn is-error" style="font-size: 0.55rem;">Logout</button>
     </div>
   </header>
 
-  <!-- Guest Header -->
+  <!-- Guest Banner -->
   <div id="guest-view" class="nes-container is-dark is-rounded" style="margin-bottom: 1.5rem;">
     <p style="font-size: 0.7rem; margin: 0;">Welcome, Guest! Log in to join missions and earn guild points.</p>
   </div>
 
-  <!-- Authenticated User Stats Dashboard -->
+  <!-- Authenticated User Dashboard -->
   <div id="dashboard-view" class="nes-container is-dark is-rounded" style="display: none; margin-bottom: 1.5rem; border-color: #f7d51d;">
     <div style="display: flex; justify-content: space-between; align-items: center;">
       <h2 style="font-size: 0.8rem; color: #f7d51d; margin: 0;">Member Status</h2>
@@ -90,7 +89,7 @@
     </div>
   </section>
 
-  <!-- Completed Projects Log Section -->
+  <!-- Completed Projects Archive Section -->
   <section class="nes-container is-dark with-title" style="margin-bottom: 2rem;">
     <p class="title" style="color: #92cc41;">Completed Projects Archive</p>
     <div id="done-projects-container">
@@ -98,7 +97,7 @@
     </div>
   </section>
 
-  <!-- Available Missions Section -->
+  <!-- Active Missions Section -->
   <section class="nes-container is-dark with-title" style="margin-bottom: 2rem;">
     <p class="title" style="color: #209cee;">Active Missions</p>
     <div id="projects-container">
@@ -106,10 +105,10 @@
     </div>
   </section>
 
-  <!-- Admin / Mission Creation Form -->
+  <!-- Admin Panel Section -->
   <section id="admin-panel" class="nes-container is-dark with-title" style="display: none;">
     <p class="title" style="color: #e76e55;">Post New Mission</p>
-    <form onsubmit="handleCreateProject(event)">
+    <form id="admin-create-form">
       <div class="nes-field" style="margin-bottom: 1rem;">
         <label style="font-size: 0.6rem;">Title</label>
         <input type="text" id="proj-title" class="nes-input is-dark" style="font-size: 0.6rem;" required />
@@ -126,10 +125,10 @@
     </form>
   </section>
 
-  <!-- Unified Auth Modal -->
+  <!-- Auth Modal -->
   <div id="auth-modal" class="dialog-backdrop">
     <div class="nes-dialog is-dark is-rounded">
-      <form id="auth-form" method="dialog" onsubmit="handleEmailAuth(event)">
+      <form id="auth-form">
         <p class="title" id="modal-title" style="font-size: 0.85rem; margin-bottom: 1rem; color: #f7d51d;">Login to SKYNET</p>
         
         <div class="nes-field" style="margin-bottom: 0.8rem;">
@@ -149,12 +148,12 @@
         <p style="font-size: 0.55rem; text-align: center; margin: 0.5rem 0; color: #aaa;">— OR OAuth SIGN-IN —</p>
 
         <div style="display: flex; gap: 8px; margin-bottom: 1rem;">
-          <button type="button" class="nes-btn is-normal" style="flex: 1; font-size: 0.55rem;" onclick="loginWithGoogle()">Google</button>
-          <button type="button" class="nes-btn is-dark" style="flex: 1; font-size: 0.55rem;" onclick="loginWithGithub()">GitHub</button>
+          <button type="button" id="btn-google-auth" class="nes-btn is-normal" style="flex: 1; font-size: 0.55rem;">Google</button>
+          <button type="button" id="btn-github-auth" class="nes-btn is-dark" style="flex: 1; font-size: 0.55rem;">GitHub</button>
         </div>
 
         <menu class="dialog-menu" style="padding: 0; margin: 0; text-align: right;">
-          <button type="button" class="nes-btn is-error" style="font-size: 0.55rem;" onclick="closeAuthModal()">Close</button>
+          <button type="button" id="btn-close-modal" class="nes-btn is-error" style="font-size: 0.55rem;">Close</button>
         </menu>
       </form>
     </div>

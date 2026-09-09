@@ -31,7 +31,7 @@ let currentAuthMode = 'login';
 let currentUser = null;
 
 // Modal Controls
-window.openAuthModal = (mode) => {
+function openAuthModal(mode) {
   currentAuthMode = mode;
   const modal = document.getElementById('auth-modal');
   const title = document.getElementById('modal-title');
@@ -48,15 +48,19 @@ window.openAuthModal = (mode) => {
   }
 
   modal.classList.add('active');
-};
+}
 
-window.closeAuthModal = () => {
+function closeAuthModal() {
   const modal = document.getElementById('auth-modal');
   modal.classList.remove('active');
-};
+}
+
+// Global window registration for dynamic inline HTML buttons
+window.openAuthModal = openAuthModal;
+window.closeAuthModal = closeAuthModal;
 
 // Auth Handlers
-window.handleEmailAuth = async (event) => {
+async function handleEmailAuth(event) {
   event.preventDefault();
   const email = document.getElementById('modal-email').value;
   const password = document.getElementById('modal-password').value;
@@ -72,36 +76,52 @@ window.handleEmailAuth = async (event) => {
   } catch (error) {
     alert("Auth Error: " + error.message);
   }
-};
+}
 
-window.loginWithGoogle = async () => {
+async function loginWithGoogle() {
   try {
     await signInWithPopup(auth, googleProvider);
     closeAuthModal();
   } catch (error) {
     alert("Google Auth Error: " + error.message);
   }
-};
+}
 
-window.loginWithGithub = async () => {
+async function loginWithGithub() {
   try {
     await signInWithPopup(auth, githubProvider);
     closeAuthModal();
   } catch (error) {
     alert("GitHub Auth Error: " + error.message);
   }
-};
+}
 
-window.logoutUser = async () => {
+async function logoutUser() {
   try {
     await signOut(auth);
   } catch (error) {
     alert("Logout Error: " + error.message);
   }
-};
+}
 
-// Create Mission (Admin Restricted via Supabase)
-window.handleCreateProject = async (event) => {
+window.logoutUser = logoutUser;
+
+// DOM Event Listeners Binding
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('btn-login-trigger')?.addEventListener('click', () => openAuthModal('login'));
+  document.getElementById('btn-signup-trigger')?.addEventListener('click', () => openAuthModal('signup'));
+  document.getElementById('btn-close-modal')?.addEventListener('click', closeAuthModal);
+  
+  document.getElementById('btn-google-auth')?.addEventListener('click', loginWithGoogle);
+  document.getElementById('btn-github-auth')?.addEventListener('click', loginWithGithub);
+  document.getElementById('btn-logout')?.addEventListener('click', logoutUser);
+
+  document.getElementById('auth-form')?.addEventListener('submit', handleEmailAuth);
+  document.getElementById('admin-create-form')?.addEventListener('submit', handleCreateProject);
+});
+
+// Create Mission
+async function handleCreateProject(event) {
   event.preventDefault();
   if (!currentUser || currentUser.email.toLowerCase() !== ADMIN_EMAIL.toLowerCase()) {
     alert("Unauthorized action!");
@@ -124,9 +144,9 @@ window.handleCreateProject = async (event) => {
     document.getElementById('proj-desc').value = '';
     renderDashboard();
   }
-};
+}
 
-// Complete Mission & Auto-Update Points across Tables
+// Complete Mission
 window.completeProject = async (projId, encTitle, encTech, encDesc) => {
   if (!currentUser) return;
 
@@ -135,7 +155,6 @@ window.completeProject = async (projId, encTitle, encTech, encDesc) => {
   const tech_stack = decodeURIComponent(encTech);
   const description = decodeURIComponent(encDesc);
 
-  // 1. Record user mission completion
   const { error: insertError } = await supabaseClient
     .from('completed_missions')
     .insert([{ user_email: email, project_id: projId }]);
@@ -149,7 +168,6 @@ window.completeProject = async (projId, encTitle, encTech, encDesc) => {
     return;
   }
 
-  // 2. Add entry to done_projects archive table
   await supabaseClient
     .from('done_projects')
     .insert([{
@@ -160,7 +178,6 @@ window.completeProject = async (projId, encTitle, encTech, encDesc) => {
       completed_by: email
     }]);
 
-  // 3. Recalculate total completed missions and points
   const { count, error: countError } = await supabaseClient
     .from('completed_missions')
     .select('*', { count: 'exact', head: true })
@@ -169,7 +186,6 @@ window.completeProject = async (projId, encTitle, encTech, encDesc) => {
   if (!countError) {
     const totalPoints = count * 5;
 
-    // 4. Automatically sync points to leaderboard table
     await supabaseClient
       .from('leaderboard')
       .upsert({
@@ -184,7 +200,7 @@ window.completeProject = async (projId, encTitle, encTech, encDesc) => {
   }
 };
 
-// Render Leaderboard, Available Missions, Done Projects & User Stats
+// UI Dashboard Sync Pipeline
 async function renderDashboard() {
   if (!currentUser) return;
 
@@ -205,7 +221,6 @@ async function renderDashboard() {
     }
   }
 
-  // Fetch Completed Mission IDs for Current User
   let userCompletions = [];
   const { data: completions } = await supabaseClient
     .from('completed_missions')
@@ -216,13 +231,12 @@ async function renderDashboard() {
     userCompletions = completions.map(c => c.project_id);
   }
 
-  // Update Stats Counters
   const countEl = document.getElementById('dash-completed-count');
   const pointsEl = document.getElementById('dash-total-points');
   if (countEl) countEl.textContent = userCompletions.length;
   if (pointsEl) pointsEl.textContent = userCompletions.length * 5;
 
-  // Render Leaderboard Table
+  // Render Leaderboard
   const lbContainer = document.getElementById('leaderboard-list');
   if (lbContainer) {
     const { data: lbData } = await supabaseClient
@@ -252,7 +266,7 @@ async function renderDashboard() {
     }
   }
 
-  // Render Done Projects Table
+  // Render Completed Projects Archive
   const doneContainer = document.getElementById('done-projects-container');
   if (doneContainer) {
     const { data: doneData } = await supabaseClient
@@ -280,7 +294,7 @@ async function renderDashboard() {
     }
   }
 
-  // Render Active Missions
+  // Render Missions
   const projContainer = document.getElementById('projects-container');
   if (projContainer) {
     const { data: projects } = await supabaseClient
